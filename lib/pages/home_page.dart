@@ -1,214 +1,104 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:app/auth.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'detail_page.dart';
 
-class HomePage extends StatelessWidget {
-  HomePage({Key? key}) : super(key: key);
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
 
-  final User? user = Auth().currentUser;
+class _HomePageState extends State<HomePage> {
+  List products = [];
+  bool isLoading = true;
 
-  Future<void> signOut() async {
-    await Auth().signOut();
+  @override
+  void initState() {
+    super.initState();
+    fetchProducts();
   }
 
-  Widget _title() {
-    return const Text(
-      'Firebase Auth',
-      style: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
-    );
-  }
-
-  Widget _userUid() {
-    return Text(
-      user?.email ?? 'User email',
-      style: const TextStyle(
-        fontSize: 18,
-        color: Colors.black87,
-      ),
-    );
-  }
-
-  Widget _signOutButton() {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15), backgroundColor: Colors.redAccent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ), // background color
-      ),
-      onPressed: signOut,
-      child: const Text(
-        'Sign Out',
-        style: TextStyle(fontSize: 16),
-      ),
-    );
+  Future<void> fetchProducts() async {
+    try {
+      final response = await http.get(Uri.parse('https://dummyjson.com/products'));
+      if (response.statusCode == 200) {
+        setState(() {
+          products = json.decode(response.body)['products'];
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load products');
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      // Handle the error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load products')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: _title(),
+        title: Text('Products', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blueAccent,
       ),
-      body: Container(
-        height: double.infinity,
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blueAccent, Colors.lightBlueAccent],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 10,
-                  offset: Offset(0, 5),
-                ),
-              ],
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: fetchProducts,
+              child: ListView.builder(
+                padding: EdgeInsets.all(8.0),
+                itemCount: products.length,
+                itemBuilder: (context, index) {
+                  final product = products[index];
+                  return Card(
+                    elevation: 5,
+                    margin: EdgeInsets.symmetric(vertical: 8.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                    child: ListTile(
+                      contentPadding: EdgeInsets.all(10.0),
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(8.0),
+                        child: Image.network(
+                          product['thumbnail'] ?? 'https://via.placeholder.com/150',
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      title: Text(
+                        product['title'] ?? 'No title',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        '${product['price'] ?? 'No price'} USD',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                      trailing: Text(
+                        product['brand'] ?? 'No brand',
+                        style: TextStyle(color: Colors.blueGrey),
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailPage(product: product),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                SizedBox(height: 20),
-                _userUid(),
-                SizedBox(height: 20),
-                _signOutButton(),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
 
-
-
-
-
-// import 'package:flutter/material.dart';
-
-// class HomePage extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text('Home Page APP'),
-//         backgroundColor: Colors.deepPurple,
-//       ),
-//       body: SingleChildScrollView(
-//         padding: const EdgeInsets.all(16.0),
-//         child: Center(
-//           child: Container(
-//             padding: EdgeInsets.all(16.0),
-//             decoration: BoxDecoration(
-//               color: Colors.white,
-//               borderRadius: BorderRadius.circular(16),
-//               boxShadow: [
-//                 BoxShadow(
-//                   color: Colors.grey.withOpacity(0.5),
-//                   spreadRadius: 5,
-//                   blurRadius: 7,
-//                   offset: Offset(0, 3),
-//                 ),
-//               ],
-//             ),
-//             child: Form(
-//               child: Column(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: <Widget>[
-//                   Text(
-//                     'Welcome Browskyo!',
-//                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-//                   ),
-//                   SizedBox(height: 8),
-//                   Text(
-//                     'Please fill out the form below:',
-//                     style: TextStyle(fontSize: 16),
-//                   ),
-//                   SizedBox(height: 24),
-//                   TextFormField(
-//                     decoration: InputDecoration(
-//                       labelText: 'Name',
-//                       border: OutlineInputBorder(
-//                         borderRadius: BorderRadius.circular(8),
-//                       ),
-//                       prefixIcon: Icon(Icons.person),
-//                       filled: true,
-//                       fillColor: Colors.grey[200],
-//                     ),
-//                   ),
-//                   SizedBox(height: 16),
-//                   TextFormField(
-//                     decoration: InputDecoration(
-//                       labelText: 'Email',
-//                       border: OutlineInputBorder(
-//                         borderRadius: BorderRadius.circular(8),
-//                       ),
-//                       prefixIcon: Icon(Icons.email),
-//                       filled: true,
-//                       fillColor: Colors.grey[200],
-//                     ),
-//                   ),
-//                   SizedBox(height: 24),
-//                   Row(
-//                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-//                     children: [
-//                       ElevatedButton(
-//                         onPressed: () {
-//                           // Handle form submission
-//                         },
-//                         style: ElevatedButton.styleFrom(
-//                           backgroundColor: Colors.deepPurple,
-//                           padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-//                           shape: RoundedRectangleBorder(
-//                             borderRadius: BorderRadius.circular(8),
-//                           ),
-//                         ),
-//                         child: Text(
-//                           'Submit',
-//                           style: TextStyle(fontSize: 16),
-//                         ),
-//                       ),
-//                       ElevatedButton(
-//                         onPressed: () {
-//                           // Handle form cancel
-//                         },
-//                         style: ElevatedButton.styleFrom(
-//                           backgroundColor: Colors.redAccent,
-//                           padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-//                           shape: RoundedRectangleBorder(
-//                             borderRadius: BorderRadius.circular(8),
-//                           ),
-//                         ),
-//                         child: Text(
-//                           'Cancel',
-//                           style: TextStyle(fontSize: 16),
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 ],
-//               ),
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
