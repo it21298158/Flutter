@@ -49,6 +49,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  //stylings added
   Widget _entryField(String title, TextEditingController controller, {bool isPassword = false}) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 10),
